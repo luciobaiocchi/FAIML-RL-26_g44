@@ -2,3 +2,5 @@ rl2026
 .venv
 venv.md
 venv
+.pyc
+__pycache__
