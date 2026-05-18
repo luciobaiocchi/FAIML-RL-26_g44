@@ -5,6 +5,8 @@ import gymnasium as gym
 import numpy as np
 import panda_gym  # type: ignore[import-not-found]
 
+from stable_baselines3.common.vec_env import SubprocVecEnv
+
 from rand_wrapper import RandomizationWrapper
 from stable_baselines3 import SAC
 
@@ -38,16 +40,20 @@ def main() -> None:
 
     env = gym.make(
         "PandaPush-v3",
-        render_mode="rgb_array",
+        #render_mode="rgb_array",
         type=args.env_type,
         reward_type="dense",
     )
     
-    model = SAC("MultiInputPolicy", env, verbose=2)
+    model = SAC("MultiInputPolicy", 
+                env,
+                ent_coef="auto_0.1", # Costringe l'algoritmo a mantenere un'entropia target più alta
+                verbose=2,)
     model.learn(total_timesteps=100000, log_interval=4)
     
 
     #TODO: add randomization wrapper here
+    
     #TODO: create model and train it
     save_name = f"sac_push_{args.sampling_strategy}_{args.env_type}_{args.timesteps // 1000}k"
     model.save(save_name)
