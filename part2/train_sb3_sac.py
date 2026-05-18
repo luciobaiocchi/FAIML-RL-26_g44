@@ -32,6 +32,19 @@ def parse_args() -> argparse.Namespace:
         default=500_000,
         help="Number of training timesteps",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for environment and model",
+    )
+    parser.add_argument(
+        "--save",
+        type=bool,
+        default=False,
+        choices=[True, False],
+        help="Select if you want to save or not the model weights"
+    )   
     return parser.parse_args()
 
 
@@ -44,19 +57,25 @@ def main() -> None:
         type=args.env_type,
         reward_type="dense",
     )
-    
-    model = SAC("MultiInputPolicy", 
-                env,
-                ent_coef="auto_0.1", # Costringe l'algoritmo a mantenere un'entropia target più alta
-                verbose=2,)
-    model.learn(total_timesteps=100000, log_interval=4)
-    
 
-    #TODO: add randomization wrapper here
-    
-    #TODO: create model and train it
-    save_name = f"sac_push_{args.sampling_strategy}_{args.env_type}_{args.timesteps // 1000}k"
-    model.save(save_name)
+    env = RandomizationWrapper(
+        env,
+        mass_range=(1.0, 5.0),
+        mode=args.sampling_strategy,
+    )
+    env.reset(seed=args.seed)
+
+    model = SAC(
+        "MultiInputPolicy",
+        env,
+        ent_coef="auto_0.1",
+        verbose=2,
+        seed=args.seed,
+    )
+    model.learn(total_timesteps=args.timesteps, log_interval=4)
+    if args.save:
+        save_name = f"sac_push_{args.sampling_strategy}_{args.env_type}_{args.timesteps // 1000}k"
+        model.save(save_name)
 
 
 if __name__ == "__main__":
