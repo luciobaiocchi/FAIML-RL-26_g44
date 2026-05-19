@@ -22,7 +22,7 @@ def main():
     print('State space:', env.observation_space)  # state-space
     print('Action space:', env.action_space)  # action-space
 
-    n_episodes = 100
+    n_episodes = 50
 
     for ep in range(n_episodes):  
         done = False

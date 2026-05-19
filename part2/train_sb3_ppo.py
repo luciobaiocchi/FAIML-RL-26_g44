@@ -1,12 +1,10 @@
 import argparse
-from collections import deque
 
 import gymnasium as gym
-import numpy as np
 import panda_gym  # type: ignore[import-not-found]
 from rand_wrapper import RandomizationWrapper
 from wrappers import RewardShapingWrapper
-from stable_baselines3.common.vec_env import VecNormalize
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
 
 from stable_baselines3 import PPO
 
@@ -46,48 +44,53 @@ def parse_args() -> argparse.Namespace:
         choices=[True, False],
         help="Select if you want to save or not the model weights"
     )
+    parser.add_argument(
+        "--n-envs",
+        type=int,
+        default=1,
+        help="Number of parallel environments (>1 uses SubprocVecEnv for multi-core)"
+    )
     return parser.parse_args()
+
+
+def make_env(env_type: str, sampling_strategy: str, seed: int, rank: int):
+    def _init():
+        env = gym.make(
+            "PandaPush-v3",
+            render_mode="rgb_array",
+            max_episode_steps=500,
+            type=env_type,
+            reward_type="dense",
+        )
+        env = RandomizationWrapper(env, mass_range=(1.0, 5.0), mode=sampling_strategy)
+        env = RewardShapingWrapper(env, bonus_distance=0.05, bonus=1.0, time_penalty=1e-2)
+        env.reset(seed=seed + rank)
+        return env
+    return _init
 
 
 def main() -> None:
     args = parse_args()
 
-    env = gym.make(
-        "PandaPush-v3",
-        render_mode="rgb_array",
-        max_episode_steps=500,
-        type=args.env_type,
-        reward_type="dense",
-    )
+    env_fns = [make_env(args.env_type, args.sampling_strategy, args.seed, i) for i in range(args.n_envs)]
+    if args.n_envs > 1:
+        env = SubprocVecEnv(env_fns)
+    else:
+        env = DummyVecEnv(env_fns)
 
+    env = VecNormalize(env, norm_obs=True, norm_reward=False, clip_obs=10.)
 
-    env = RandomizationWrapper(
-        env,
-        mass_range=(1.0, 5.0),
-        mode=args.sampling_strategy,
-    )
-
-    # Simple reward shaping: small time penalty and close-range bonus
-    env = RewardShapingWrapper(env, bonus_distance=0.05, bonus=1.0, time_penalty=1e-3)
-
-    # Normalize observations and rewards online
-    #env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.)
-
-    env.reset(seed=args.seed)
-    
-    # Rete con 4 hidden layers: 512 neuroni, poi 256, poi 128, poi 64
-    #policy_kwargs = dict(net_arch=[512, 256, 128, 64])
-    policy_kwargs = dict(net_arch=[256,256])
-    
+    #policy_kwargs = dict(net_arch=[256, 256])
+    policy_kwargs = dict(net_arch=[512, 256, 128])
     
     model = PPO(
         "MultiInputPolicy",
         env,
-        learning_rate=0.001, # provato anche 3e-4, 1e-
-        n_steps=1024, #provato anche 2048
+        learning_rate=3e-4,
+        n_steps=2048,
         gamma=0.99,
         clip_range=0.2,
-        ent_coef=0.005, # provato anche 0.01
+        ent_coef=0.001,
         verbose=1,
         tensorboard_log="./ppo_logs/",
         seed=args.seed,
