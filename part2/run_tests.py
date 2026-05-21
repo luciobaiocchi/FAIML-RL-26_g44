@@ -43,7 +43,7 @@ SAC_PROFILES: dict[int, dict] = {
         "gradient_steps":  [1, 2],
         "learning_starts": [1000],
         "her":             [True],
-        "sampling_strategy": ["none", "udr", "adr"],
+        "sampling_strategy": ["none"],
     },
     4: {  # Shortlist per run lunghe: stabile, sample-efficient, con/ senza UDR
         "learning_rate":   [1e-4, 3e-4],
@@ -54,7 +54,7 @@ SAC_PROFILES: dict[int, dict] = {
         "tau":             [0.005],
         "train_freq":      [1],
         "her":             [True],
-        "sampling_strategy": ["none", "udr"],
+        "sampling_strategy": ["none"],
     },
 }
 
@@ -87,7 +87,7 @@ PPO_PROFILES: dict[int, dict] = {
         "gae_lambda":      [0.95],
         "ent_coef":        [0.001, 0.005],
         "n_envs":          [8],
-        "sampling_strategy": ["none", "udr", "adr"],
+        "sampling_strategy": ["none"],
     },
     4: {  # Shortlist PPO per confronto con SAC+HER
         "learning_rate":   [1e-4, 3e-4],
@@ -97,7 +97,7 @@ PPO_PROFILES: dict[int, dict] = {
         "gae_lambda":      [0.95],
         "ent_coef":        [0.001],
         "n_envs":          [8],
-        "sampling_strategy": ["none", "udr"],
+        "sampling_strategy": ["none"],
     },
 }
 
