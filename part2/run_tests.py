@@ -66,6 +66,19 @@ PPO_PROFILES: dict[int, dict] = {
     },
 }
 
+# Abbreviazioni chiavi per run name leggibile
+KEY_ABBR: dict[str, str] = {
+    "learning_rate":     "lr",
+    "batch_size":        "bs",
+    "gradient_steps":    "gs",
+    "sampling_strategy": "dr",
+    "ent_coef":          "ec",
+    "n_steps":           "ns",
+    "clip_range":        "cr",
+    "n_envs":            "ne",
+    "her":               "her",
+}
+
 # Mappatura nome parametro → flag CLI
 SAC_FLAG_MAP: dict[str, str] = {
     "learning_rate":    "--learning-rate",
@@ -87,7 +100,7 @@ PPO_FLAG_MAP: dict[str, str] = {
 
 # Timesteps per smoke test (piccoli ma validi per entrambi gli algoritmi)
 SMOKE_TIMESTEPS = {
-    "sac": 500,    # supera learning_starts=100, fa qualche update
+    "sac": 2500,   # ~5 episodi (max_episode_steps=500): supera log_interval=4 e learning_starts=100
     "ppo": 3000,   # circa 1 rollout con n_steps=2048; con n_envs>1 ne fa comunque 1 completo
 }
 
@@ -104,15 +117,16 @@ def grid_combinations(grid: dict) -> list[dict]:
     ]
 
 
-def make_run_name(algorithm: str, params: dict) -> str:
-    parts = [algorithm]
+def make_run_name(algorithm: str, profile: int, params: dict) -> str:
+    parts = [algorithm.upper(), str(profile)]
     for k, v in params.items():
+        key = KEY_ABBR.get(k, k)
         if isinstance(v, float):
-            parts.append(f"{k}{v:.0e}")
+            parts.append(f"{key}{v:.0e}")
         elif isinstance(v, bool):
-            parts.append(f"{k}{int(v)}")
+            parts.append(f"{key}{int(v)}")
         else:
-            parts.append(f"{k}{v}")
+            parts.append(f"{key}{v}")
     return "_".join(parts)
 
 
@@ -228,7 +242,7 @@ def main() -> None:
     results: list[tuple[str, bool]] = []
 
     for i, params in enumerate(combinations, 1):
-        run_name = make_run_name(args.algorithm, params)
+        run_name = make_run_name(args.algorithm, args.profile, params)
         output_dir = base_dir / run_name
         cmd = build_command(args.algorithm, params, timesteps, args.save, run_name)
         print(f"\n[{i}/{len(combinations)}]")

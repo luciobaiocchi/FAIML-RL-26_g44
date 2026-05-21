@@ -171,20 +171,20 @@ def train_ppo(args: argparse.Namespace) -> None:
         ent_coef=args.ent_coef,
         gae_lambda=args.gae_lambda,
         verbose=1,
-        tensorboard_log="./ppo_logs/",
+        tensorboard_log="./tb_logs/",
         seed=args.seed,
         policy_kwargs=dict(net_arch=[256, 256]),
     )
-    model.learn(total_timesteps=args.timesteps, log_interval=1)
+    tb_name = args.run_name or f"PPO_{args.sampling_strategy}_{args.env_type}_{args.timesteps // 1000}k"
+    model.learn(total_timesteps=args.timesteps, log_interval=1, tb_log_name=tb_name)
 
     if args.save:
         from pathlib import Path
-        Path("models").mkdir(exist_ok=True)
-        base = args.run_name or f"ppo_{args.sampling_strategy}_{args.env_type}_{args.timesteps // 1000}k"
-        name = f"models/{base}"
-        model.save(name)
-        env.save(name + "_vecnorm.pkl")
-        print(f"Modello salvato: {name}.zip")
+        save_dir = Path("models") / (args.run_name or tb_name)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        model.save(save_dir / "model")
+        env.save(save_dir / "vecnorm.pkl")
+        print(f"Modello salvato: {save_dir}/model.zip")
 
 
 # ─── Training SAC ─────────────────────────────────────────────────────────────
@@ -210,22 +210,22 @@ def train_sac(args: argparse.Namespace) -> None:
         train_freq=args.train_freq,
         ent_coef="auto_0.1",
         verbose=1,
-        tensorboard_log="./sac_logs/",
+        tensorboard_log="./tb_logs/",
         seed=args.seed,
         device=args.device,
         replay_buffer_class=replay_buffer_class,
         replay_buffer_kwargs=replay_buffer_kwargs,
     )
-    model.learn(total_timesteps=args.timesteps, log_interval=4)
+    tb_name = args.run_name or (f"SAC_{args.sampling_strategy}_{args.env_type}"
+                                f"_{args.timesteps // 1000}k{'_her' if args.her else ''}")
+    model.learn(total_timesteps=args.timesteps, log_interval=4, tb_log_name=tb_name)
 
     if args.save:
         from pathlib import Path
-        Path("models").mkdir(exist_ok=True)
-        base = args.run_name or (f"sac_{args.sampling_strategy}_{args.env_type}"
-                                 f"_{args.timesteps // 1000}k{'_her' if args.her else ''}")
-        name = f"models/{base}"
-        model.save(name)
-        print(f"Modello salvato: {name}.zip")
+        save_dir = Path("models") / (args.run_name or tb_name)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        model.save(save_dir / "model")
+        print(f"Modello salvato: {save_dir}/model.zip")
 
 
 # ─── Entry point ─────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 conda activate rl_env
 
-tensorboard --logdir /Users/luciobaiocchi/projects/FAIML-RL-26_g44/part2/ppo_logs/
+tensorboard --logdir /Users/luciobaiocchi/projects/FAIML-RL-26_g44/part2/tb_logs/
 
 
 # SAC + HER
